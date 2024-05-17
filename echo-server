@@ -1,0 +1,68 @@
+#!/usr/bin/python3
+import socket, multiprocessing, os, sys
+
+def syntax():
+	print("""echo-server:
+syntax : ./echo-server <port> [-e[-b]]
+sample : ./echo-server 1234 -e -b""")
+
+def pre():
+	try:
+		port = int(sys.argv[1])
+		assert 0 <= port < 65536
+
+		if sys.argv[2:] == []:
+			mode = 0
+		elif sys.argv[2:] == ["-e"]:
+			mode = 1
+		elif sys.argv[2:] == ["-e", "-b"]:
+			mode = 2
+		else:
+			raise SyntaxError
+
+		return ("0.0.0.0", port), mode
+
+	except:
+		syntax()
+		exit()
+
+def worker(client, clients, mode, id):
+	while True:
+		data = client.recv(65535)
+		if not data:
+			break
+
+		print(f"Recieved {len(data)} bytes from client: \n{data}")
+
+		if mode == 1:
+			client.send(data)
+		elif mode == 2:
+			for ids in clients.keys():
+				cl = clients[ids]
+
+				if cl != None:
+					cl.send(data)
+
+	client.close()
+
+	assert clients[id] != None
+	clients[id] = None
+
+if __name__ == "__main__":
+	ADDR, mode = pre()
+
+	server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	server.bind(ADDR)
+
+	server.listen(100)
+
+	manager = multiprocessing.Manager()
+	clients = manager.dict()
+
+	while True:
+		client, addr = server.accept()
+
+		id = os.urandom(16)
+		clients[id] = client
+		
+		multiprocessing.Process(target=worker, args=(client, clients, mode, id)).start()

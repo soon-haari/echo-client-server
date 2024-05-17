@@ -1,0 +1,47 @@
+#!/usr/bin/python3
+import socket, multiprocessing, os, sys
+
+def syntax():
+	print("""echo-client:
+syntax : ./echo-client <ip> <port>
+sample : ./echo-client 192.168.10.2 1234""")
+
+def pre():
+	try:
+		assert len(sys.argv) == 3
+
+		ip = sys.argv[1]
+		port = int(sys.argv[2])
+		assert 0 <= port < 65536
+
+		return ("0.0.0.0", port)
+
+	except:
+		syntax()
+		exit()
+
+def client_nc():
+	os.system(f"nc {ADDR[0]} {ADDR[1]}")
+
+def recv(client):
+	while True:
+		data = client.recv(65535)
+
+		# ???
+		# sys.stdout.buffer.write(data)
+		print(data.decode(), end="")
+
+def client_socket_implement():
+	client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	client.connect(ADDR)
+
+	multiprocessing.Process(target=recv, args=(client, )).start()
+	while True:
+		data = sys.stdin.buffer.readline()
+		client.send(data)
+
+if __name__ == "__main__":
+	ADDR = pre()
+
+	# client_nc()
+	client_socket_implement()
