@@ -14,7 +14,7 @@ def pre():
 		port = int(sys.argv[2])
 		assert 0 <= port < 65536
 
-		return ("0.0.0.0", port)
+		return (ip, port)
 
 	except:
 		syntax()
